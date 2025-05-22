@@ -26,48 +26,47 @@
   <div id="webcam"></div>
   <h2 id="label">Cargando...</h2>
 
-  <script type="module">
-   window.addEventListener('DOMContentLoaded', async () => {
-      import * as tmImage from 'https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js';
+ <script type="module">
+  import * as tmImage from 'https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js';
 
-      const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+  window.addEventListener('DOMContentLoaded', async () => {
+    const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
 
-      let model, webcam, labelContainer;
+    let model, webcam, labelContainer;
 
-      async function init() {
-  model = await tmImage.load(modelURL, metadataURL);
-  webcam = new tmImage.Webcam(224, 224, true);
-  await webcam.setup();
-  await webcam.play();
+    async function init() {
+      model = await tmImage.load(modelURL, metadataURL);
+      webcam = new tmImage.Webcam(224, 224, true);
+      await webcam.setup();
+      await webcam.play();
 
-  document.getElementById("webcam").appendChild(webcam.webcam);
+      document.getElementById("webcam").appendChild(webcam.webcam);
 
-  // Forzar visibilidad y tamaño del video
-  webcam.webcam.style.display = 'block';
-  webcam.webcam.style.width = '300px';
-  webcam.webcam.style.height = '300px';
+      webcam.webcam.style.setProperty('display', 'block', 'important');
+      webcam.webcam.style.width = '300px';
+      webcam.webcam.style.height = '300px';
 
-  labelContainer = document.getElementById("label");
-  window.requestAnimationFrame(loop);
-}
+      labelContainer = document.getElementById("label");
+      window.requestAnimationFrame(loop);
+    }
 
-      async function loop() {
-        webcam.update();
-        await predict();
-        window.requestAnimationFrame(loop);
-      }
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
 
-      async function predict() {
-        const prediction = await model.predict(webcam.canvas);
-        let best = prediction.reduce((a, b) => (a.probability > b.probability) ? a : b);
-        labelContainer.innerText = `Detectado: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
-      }
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      let best = prediction.reduce((a, b) => (a.probability > b.probability) ? a : b);
+      labelContainer.innerText = `Detectado: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
+    }
 
-      init();
-    });
-  </script>
+    init();
+  });
+</script>
 </body>
 </html>
 
