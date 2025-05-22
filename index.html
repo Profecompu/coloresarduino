@@ -36,14 +36,21 @@
       let model, webcam, labelContainer;
 
       async function init() {
-        model = await tmImage.load(modelURL, metadataURL);
-        webcam = new tmImage.Webcam(224, 224, true);
-        await webcam.setup();
-        await webcam.play();
-        document.getElementById("webcam").appendChild(webcam.webcam);
-        labelContainer = document.getElementById("label");
-        window.requestAnimationFrame(loop);
-      }
+  model = await tmImage.load(modelURL, metadataURL);
+  webcam = new tmImage.Webcam(224, 224, true);
+  await webcam.setup();
+  await webcam.play();
+
+  document.getElementById("webcam").appendChild(webcam.webcam);
+
+  // Forzar visibilidad y tamaño del video
+  webcam.webcam.style.display = 'block';
+  webcam.webcam.style.width = '300px';
+  webcam.webcam.style.height = '300px';
+
+  labelContainer = document.getElementById("label");
+  window.requestAnimationFrame(loop);
+}
 
       async function loop() {
         webcam.update();
