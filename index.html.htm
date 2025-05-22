@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Detector de Color</title>
+  <style>
+    #webcam video {
+      width: 300px;
+      height: 300px;
+      border: 2px solid black;
+    }
+  </style>
+</head>
+<body>
+  <h1>Teachable Machine + Cámara</h1>
+  <div id="webcam"></div>
+  <h2 id="label">Cargando...</h2>
+
+  <script type="module">
+    import * as tmImage from 'https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js';
+
+    const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
+
+    let model, webcam, labelContainer;
+
+    async function init() {
+      model = await tmImage.load(modelURL, metadataURL);
+      webcam = new tmImage.Webcam(224, 224, true); // flip = true
+      await webcam.setup(); // Pide acceso a la cámara
+      await webcam.play();  // Comienza la transmisión
+
+      // Usa el video nativo en vez del canvas
+      document.getElementById("webcam").appendChild(webcam.canvas);
+
+      labelContainer = document.getElementById("label");
+      window.requestAnimationFrame(loop);
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      console.log(prediction);
+
+      let best = prediction.reduce((a, b) => (a.probability > b.probability) ? a : b);
+      labelContainer.innerText = `Detectado: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
+    }
+
+    init();
+  </script>
+</body>
+</html>
+
