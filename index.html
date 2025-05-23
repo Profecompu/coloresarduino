@@ -41,41 +41,58 @@
   <h2 id="label">Cargando...</h2>
 
   <!-- Script principal sin module -->
-  <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
+<script>
+  const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
+  const modelURL = URL + "model.json";
+  const metadataURL = URL + "metadata.json";
 
-    let model, webcam, labelContainer;
+  let model, webcam, labelContainer;
+  let lastColorSent = ""; // evitar enviar el mismo color repetidamente
 
-    async function init() {
-      model = await tmImage.load(modelURL, metadataURL);
-      webcam = new tmImage.Webcam(224, 224, true); // cámara frontal
-      await webcam.setup();
-      await webcam.play();
+  async function init() {
+    model = await tmImage.load(modelURL, metadataURL);
+    webcam = new tmImage.Webcam(224, 224, true); // cámara frontal
+    await webcam.setup();
+    await webcam.play();
 
-      // Inserta video
-      document.getElementById("webcam").appendChild(webcam.webcam);
-      webcam.webcam.setAttribute("playsinline", "");
-      webcam.webcam.style.setProperty("display", "block", "important");
+    document.getElementById("webcam").appendChild(webcam.webcam);
+    webcam.webcam.setAttribute("playsinline", "");
+    webcam.webcam.style.setProperty("display", "block", "important");
 
-      labelContainer = document.getElementById("label");
-      window.requestAnimationFrame(loop);
+    labelContainer = document.getElementById("label");
+    window.requestAnimationFrame(loop);
+  }
+
+  async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
+  }
+
+  async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let best = prediction.reduce((a, b) => (a.probability > b.probability ? a : b));
+
+    const colorDetectado = best.className.toLowerCase();
+    const probabilidad = best.probability;
+
+    labelContainer.innerText = `Detectado: ${colorDetectado} (${(probabilidad * 100).toFixed(2)}%)`;
+
+    if ((colorDetectado === "rojo" || colorDetectado === "azul") && probabilidad > 0.90 && colorDetectado !== lastColorSent) {
+      lastColorSent = colorDetectado;
+      fetch("/color", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ color: colorDetectado })
+      })
+      .then(res => res.text())
+      .then(data => console.log("Respuesta del servidor:", data));
     }
+  }
 
-    async function loop() {
-      webcam.update();
-      await predict();
-      window.requestAnimationFrame(loop);
-    }
-
-    async function predict() {
-      const prediction = await model.predict(webcam.canvas);
-      let best = prediction.reduce((a, b) => (a.probability > b.probability ? a : b));
-      labelContainer.innerText = `Detectado: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
