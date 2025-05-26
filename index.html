@@ -40,13 +40,13 @@
   <div id="webcam"></div>
   <h2 id="label">Cargando...</h2>
 
-  <!-- Script principal sin module -->
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
 
     let model, webcam, labelContainer;
+    let ultimoColor = "";
 
     async function init() {
       model = await tmImage.load(modelURL, metadataURL);
@@ -72,7 +72,24 @@
     async function predict() {
       const prediction = await model.predict(webcam.canvas);
       let best = prediction.reduce((a, b) => (a.probability > b.probability ? a : b));
-      labelContainer.innerText = `Detectado: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
+      const colorDetectado = best.className.toLowerCase();
+
+      labelContainer.innerText = `Detectado: ${colorDetectado} (${(best.probability * 100).toFixed(2)}%)`;
+
+      if (colorDetectado !== ultimoColor && best.probability > 0.8) {
+        ultimoColor = colorDetectado;
+
+        fetch('https://TU-DOMINIO.ngrok.io/color', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ color: colorDetectado })
+        })
+        .then(res => res.text())
+        .then(data => console.log("Respuesta del servidor:", data))
+        .catch(err => console.error("Error enviando al servidor:", err));
+      }
     }
 
     init();
