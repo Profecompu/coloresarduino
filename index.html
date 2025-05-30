@@ -60,7 +60,7 @@
 
     async function init() {
       model = await tmImage.load(modelURL, metadataURL);
-      webcam = new tmImage.Webcam(224, 224, true); // cámara frontal
+      webcam = new tmImage.Webcam(224, 224, true);
       await webcam.setup();
       await webcam.play();
 
@@ -81,25 +81,25 @@
     async function predict() {
       const prediction = await model.predict(webcam.canvas);
       let best = prediction.reduce((a, b) => (a.probability > b.probability ? a : b));
-      const colorDetectado = best.className.toLowerCase();
+      
+      let claseCruda = best.className;
+      let colorDetectado = claseCruda.toLowerCase().trim();
       const probabilidad = best.probability;
 
-      labelContainer.innerText = `Detectado: ${colorDetectado} (${(probabilidad * 100).toFixed(2)}%)`;
+      labelContainer.innerText = `Detectado: ${claseCruda} (${(probabilidad * 100).toFixed(2)}%)`;
+      console.log("Clase detectada:", claseCruda, "Probabilidad:", probabilidad);
 
       const colorBar = document.getElementById("colorBar");
 
       if (probabilidad > 0.8 && (colorDetectado === "rojo" || colorDetectado === "azul")) {
-        // Mostrar barra del color detectado
         colorBar.style.backgroundColor = colorDetectado;
         colorBar.style.display = "block";
 
-        // Reiniciar temporizador para ocultarla luego de 3 segundos
         if (timeoutBarra) clearTimeout(timeoutBarra);
         timeoutBarra = setTimeout(() => {
           colorBar.style.display = "none";
         }, 3000);
 
-        // Solo enviar al servidor si es un nuevo color
         if (colorDetectado !== ultimoColor) {
           ultimoColor = colorDetectado;
 
@@ -114,6 +114,8 @@
           .then(data => console.log("Respuesta del servidor:", data))
           .catch(err => console.error("Error enviando al servidor:", err));
         }
+      } else {
+        colorBar.style.display = "none";
       }
     }
 
