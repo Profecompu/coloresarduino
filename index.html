@@ -33,12 +33,21 @@
       height: 100%;
       object-fit: cover;
     }
+
+    #colorBar {
+      width: 100%;
+      height: 30px;
+      display: none;
+      margin-top: 10px;
+      transition: opacity 0.5s ease;
+    }
   </style>
 </head>
 <body>
   <h1>Teachable Machine + Cámara</h1>
   <div id="webcam"></div>
   <h2 id="label">Cargando...</h2>
+  <div id="colorBar"></div>
 
   <script>
     const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
@@ -47,6 +56,7 @@
 
     let model, webcam, labelContainer;
     let ultimoColor = "";
+    let timeoutBarra;
 
     async function init() {
       model = await tmImage.load(modelURL, metadataURL);
@@ -54,7 +64,6 @@
       await webcam.setup();
       await webcam.play();
 
-      // Inserta video
       document.getElementById("webcam").appendChild(webcam.webcam);
       webcam.webcam.setAttribute("playsinline", "");
       webcam.webcam.style.setProperty("display", "block", "important");
@@ -73,22 +82,38 @@
       const prediction = await model.predict(webcam.canvas);
       let best = prediction.reduce((a, b) => (a.probability > b.probability ? a : b));
       const colorDetectado = best.className.toLowerCase();
+      const probabilidad = best.probability;
 
-      labelContainer.innerText = `Detectado: ${colorDetectado} (${(best.probability * 100).toFixed(2)}%)`;
+      labelContainer.innerText = `Detectado: ${colorDetectado} (${(probabilidad * 100).toFixed(2)}%)`;
 
-      if (colorDetectado !== ultimoColor && best.probability > 0.8) {
-        ultimoColor = colorDetectado;
+      const colorBar = document.getElementById("colorBar");
 
-        fetch('https://TU-DOMINIO.ngrok.io/color', {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ color: colorDetectado })
-        })
-        .then(res => res.text())
-        .then(data => console.log("Respuesta del servidor:", data))
-        .catch(err => console.error("Error enviando al servidor:", err));
+      if (probabilidad > 0.8 && (colorDetectado === "rojo" || colorDetectado === "azul")) {
+        // Mostrar barra del color detectado
+        colorBar.style.backgroundColor = colorDetectado;
+        colorBar.style.display = "block";
+
+        // Reiniciar temporizador para ocultarla luego de 3 segundos
+        if (timeoutBarra) clearTimeout(timeoutBarra);
+        timeoutBarra = setTimeout(() => {
+          colorBar.style.display = "none";
+        }, 3000);
+
+        // Solo enviar al servidor si es un nuevo color
+        if (colorDetectado !== ultimoColor) {
+          ultimoColor = colorDetectado;
+
+          fetch('https://TU-DOMINIO.ngrok.io/color', {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ color: colorDetectado })
+          })
+          .then(res => res.text())
+          .then(data => console.log("Respuesta del servidor:", data))
+          .catch(err => console.error("Error enviando al servidor:", err));
+        }
       }
     }
 
