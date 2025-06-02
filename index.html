@@ -25,9 +25,13 @@
   <div id="webcam-container"></div>
   <div id="label-container">Cargando...</div>
 
-  <script type="module">
-    import * as tmImage from "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
+  <!-- Cargar TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 
+  <!-- Cargar Teachable Machine Image -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+  <script>
     const URL = "https://teachablemachine.withgoogle.com/models/0OhlxgDIG/";
 
     let model, webcam, labelContainer;
@@ -38,7 +42,7 @@
 
       model = await tmImage.load(modelURL, metadataURL);
 
-      webcam = new tmImage.Webcam(200, 200, true);
+      webcam = new tmImage.Webcam(200, 200, true); // width, height, flip
       await webcam.setup();
       await webcam.play();
       window.requestAnimationFrame(loop);
@@ -48,7 +52,7 @@
     }
 
     async function loop() {
-      webcam.update();
+      webcam.update(); // Actualiza el frame
       await predict();
       window.requestAnimationFrame(loop);
     }
@@ -56,7 +60,6 @@
     async function predict() {
       const prediction = await model.predict(webcam.canvas);
 
-      // Ordenar por mayor probabilidad
       prediction.sort((a, b) => b.probability - a.probability);
 
       const detectedClass = prediction[0].className;
@@ -64,9 +67,9 @@
 
       labelContainer.innerHTML = `Color detectado: ${detectedClass} (${probability})`;
 
-      if (detectedClass === "rojo") {
+      if (detectedClass === "Rojo") {
         document.body.style.backgroundColor = "red";
-      } else if (detectedClass === "azul") {
+      } else if (detectedClass === "Azul") {
         document.body.style.backgroundColor = "blue";
       }
     }
@@ -74,4 +77,4 @@
     init();
   </script>
 </body>
-</html>  
+</html>
